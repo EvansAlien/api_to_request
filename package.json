@@ -2,7 +2,8 @@
   "name": "zorycode-request-generator",
   "displayName": "ZoryCode Request Generator",
   "description": "从 OpenAPI 自动生成前端 request 与 models",
-  "version": "1.0.0",
+  "icon": "images/icons8-g-100.png",
+  "version": "1.1.1",
   "publisher": "EvansAlien6173",
   "engines": {
     "vscode": "^1.90.0"
@@ -10,11 +11,20 @@
   "categories": [
     "Other"
   ],
+  "homepage": "https://github.com/EvansAlien/api_to_request/blob/master/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EvansAlien/api_to_request.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EvansAlien/api_to_request/issues"
+  },
   "keywords": [
     "openapi",
     "swagger",
     "request",
-    "generator"
+    "generator",
+    "https://github.com/EvansAlien/api_to_request"
   ],
   "main": "./dist/extension.js",
   "contributes": {
