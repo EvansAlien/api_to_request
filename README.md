@@ -16,8 +16,6 @@
 3. 调试：F5 运行 `Run Extension`
 
 ## 命令
-
-- `Hello World` -> `extension.helloWorld`
 - `Generate Requests from OpenAPI` -> `extension.generateRequests`
 
 ## 生成 OpenAPI Request
@@ -41,4 +39,10 @@ swagger:
   pathHidden:
     - /schedule/ws
   urlPrefix: business
+  folderMap:
+    游戏时长统计: gameTimeStatic
+    游戏记录: gameRecord
+    推送消息管理: pushMessageManagement
+    推送调度管理: pushSchedulerManagement
+  
 ```
