@@ -31,7 +31,7 @@ export async function generateFromOpenApi(options: GenerateOptions) {
     await fs.rm(outputRoot, { recursive: true, force: true });
   }
   await fs.mkdir(outputRoot, { recursive: true });
-  await writeBaseHttpFiles(outputRoot);
+  await writeBaseHttpFiles(outputRoot, options.baseHttp);
 
   const tagMap = new Map<string, OperationModel[]>();
   for (const op of operations) {

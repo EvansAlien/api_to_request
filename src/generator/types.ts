@@ -10,6 +10,14 @@ export interface GenerateOptions {
   schemasPackageMap?: Record<string, string>;
   customModelFolder?: Record<string, string>;
   folderMap?: Record<string, string>;
+  baseHttp?: BaseHttpConfig;
+}
+
+export interface BaseHttpConfig {
+  template?: 'fetch' | 'axios' | 'custom';
+  pageResp?: string;
+  requestTemplate?: string;
+  customImports?: string;
 }
 
 export interface Operation {

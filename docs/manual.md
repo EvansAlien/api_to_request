@@ -31,6 +31,19 @@ swagger:
       enterprise_controller: enterprise_service
     customModelFolder:
       User: user
+    baseHttp:
+      template: axios
+      pageResp: |
+        export interface PageData<T> {
+          list: T[];
+          page: number;
+          size: number;
+          total: number;
+        }
+
+        export interface PageResp<T> {
+          data: PageData<T>;
+        }
   - jsonUrl: http://127.0.0.1:4523/export/openapi/4?version=3.0
     outputDir: /domains/api-v4
     overwrite: true
@@ -112,6 +125,50 @@ export async function getApiAdminUsers(
   const url = '/api/admin/users';
   return request<PageResp<models.User[]>>({ method: 'GET', url, params });
 }
+```
+
+## base_http 模板配置
+
+你可以在 `zorycode.yaml` 中配置 `baseHttp`，用来定制 `base_http.ts/.d.ts` 的 `PageResp` 类型与 `request` 请求模板。
+
+支持的字段：
+
+- `template`: `fetch | axios | custom`，默认 `fetch`
+- `pageResp`: 自定义 `PageResp`/`PageData` 的 TS 片段（将直接写入 `base_http.ts/.d.ts`）
+- `requestTemplate`: 自定义 `request` 函数模板（会直接替换 `base_http.ts` 中的 `request` 实现）
+- `customImports`: 自定义 import 语句（会插入到 `base_http.ts` 顶部，适合引入 axios 或其他依赖）
+
+### 使用 axios 模板
+
+```yaml
+swagger:
+  jsonUrl: http://127.0.0.1:4523/export/openapi/3?version=3.0
+  outputDir: /domains/api-v3
+  baseHttp:
+    template: axios
+```
+
+### 自定义 request 模板
+
+```yaml
+swagger:
+  jsonUrl: http://127.0.0.1:4523/export/openapi/3?version=3.0
+  outputDir: /domains/api-v3
+  baseHttp:
+    template: custom
+    customImports: |
+      import axios from 'axios';
+    requestTemplate: |
+      export async function request<T>(options: RequestOptions): Promise<T> {
+        const response = await axios.request<T>({
+          method: options.method,
+          url: options.url,
+          params: options.params,
+          data: options.data,
+          baseURL: BASE_URL
+        });
+        return response.data;
+      }
 ```
 
 ## 预计输出示例（model）

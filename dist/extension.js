@@ -130,7 +130,8 @@ async function runGenerateOnce(workspaceRoot, config) {
         urlPrefix: config.urlPrefix,
         schemasPackageMap: config.schemasPackageMap,
         customModelFolder: config.customModelFolder,
-        folderMap: config.folderMap
+        folderMap: config.folderMap,
+        baseHttp: config.baseHttp
     });
 }
 
@@ -8763,7 +8764,7 @@ async function generateFromOpenApi(options) {
         await fs.rm(outputRoot, { recursive: true, force: true });
     }
     await fs.mkdir(outputRoot, { recursive: true });
-    await (0, requests_1.writeBaseHttpFiles)(outputRoot);
+    await (0, requests_1.writeBaseHttpFiles)(outputRoot, options.baseHttp);
     const tagMap = new Map();
     for (const op of operations) {
         const model = (0, operations_1.buildOperationModel)(op, modelLookup);
@@ -9652,11 +9653,15 @@ exports.buildTagFiles = buildTagFiles;
 const fs = __importStar(__webpack_require__(2));
 const path = __importStar(__webpack_require__(3));
 const utils_1 = __webpack_require__(85);
-async function writeBaseHttpFiles(outputRoot) {
+async function writeBaseHttpFiles(outputRoot, config) {
     const baseHttpPath = path.join(outputRoot, 'base_http.ts');
     const baseHttpDtsPath = path.join(outputRoot, 'base_http.d.ts');
+    const importLines = buildBaseHttpImports(config);
+    const pageRespLines = buildPageRespLines(config);
+    const requestTemplate = buildRequestTemplate(config);
     const baseLines = [
         '/* eslint-disable */',
+        ...importLines,
         '',
         'export type RequestOptions = {',
         '  method: string;',
@@ -9665,16 +9670,7 @@ async function writeBaseHttpFiles(outputRoot) {
         '  data?: any;',
         '};',
         '',
-        'export interface PageData<T> {',
-        '  list: T[];',
-        '  page: number;',
-        '  size: number;',
-        '  total: number;',
-        '}',
-        '',
-        'export interface PageResp<T> {',
-        '  data: PageData<T>;',
-        '}',
+        ...pageRespLines,
         '',
         "export const BASE_URL = '';",
         '',
@@ -9693,6 +9689,76 @@ async function writeBaseHttpFiles(outputRoot) {
         "  return urlTemplate.replace(/\\{(\\w+)\\}/g, (_, key) => encodeURIComponent(String(params[key])));",
         '}',
         '',
+        requestTemplate,
+        ''
+    ];
+    const dtsLines = [
+        'export type RequestOptions = {',
+        '  method: string;',
+        '  url: string;',
+        '  params?: Record<string, any>;',
+        '  data?: any;',
+        '};',
+        '',
+        ...pageRespLines,
+        '',
+        'export const BASE_URL: string;',
+        '',
+        'export function buildQuery(params?: Record<string, any>): string;',
+        'export function applyPathParams(urlTemplate: string, params: Record<string, any>): string;',
+        'export function request<T>(options: RequestOptions): Promise<T>;',
+        ''
+    ];
+    await fs.writeFile(baseHttpPath, baseLines.join('\n'), 'utf8');
+    await fs.writeFile(baseHttpDtsPath, dtsLines.join('\n'), 'utf8');
+}
+function buildBaseHttpImports(config) {
+    const lines = [];
+    if (config?.template === 'axios') {
+        lines.push("import axios from 'axios';");
+    }
+    if (config?.customImports) {
+        lines.push(...splitTemplateLines(config.customImports));
+    }
+    return lines.length > 0 ? [...lines, ''] : [];
+}
+function buildPageRespLines(config) {
+    if (config?.pageResp?.trim()) {
+        return splitTemplateLines(config.pageResp);
+    }
+    return [
+        'export interface PageData<T> {',
+        '  list: T[];',
+        '  page: number;',
+        '  size: number;',
+        '  total: number;',
+        '}',
+        '',
+        'export interface PageResp<T> {',
+        '  data: PageData<T>;',
+        '}'
+    ];
+}
+function buildRequestTemplate(config) {
+    const custom = config?.requestTemplate?.trim();
+    if (custom) {
+        return custom;
+    }
+    if (config?.template === 'axios') {
+        return [
+            'export async function request<T>(options: RequestOptions): Promise<T> {',
+            '  const response = await axios.request<T>({',
+            '    method: options.method,',
+            '    url: options.url,',
+            '    params: options.params,',
+            '    data: options.data,',
+            '    baseURL: BASE_URL',
+            '  });',
+            '  return response.data;',
+            '}'
+        ].join('\n');
+    }
+    return [
         'export async function request<T>(options: RequestOptions): Promise<T> {',
         '  const url = `${BASE_URL}${options.url}${buildQuery(options.params)}`;',
         '  const response = await fetch(url, {',
@@ -9704,37 +9770,11 @@ async function writeBaseHttpFiles(outputRoot) {
         '    throw new Error(`请求失败: ${response.status} ${response.statusText}`);',
         '  }',
         '  return (await response.json()) as T;',
-        '}',
-        ''
-    ];
-    const dtsLines = [
-        'export type RequestOptions = {',
-        '  method: string;',
-        '  url: string;',
-        '  params?: Record<string, any>;',
-        '  data?: any;',
-        '};',
-        '',
-        'export interface PageData<T> {',
-        '  list: T[];',
-        '  page: number;',
-        '  size: number;',
-        '  total: number;',
-        '}',
-        '',
-        'export interface PageResp<T> {',
-        '  data: PageData<T>;',
-        '}',
-        '',
-        'export const BASE_URL: string;',
-        '',
-        'export function buildQuery(params?: Record<string, any>): string;',
-        'export function applyPathParams(urlTemplate: string, params: Record<string, any>): string;',
-        'export function request<T>(options: RequestOptions): Promise<T>;',
-        ''
-    ];
-    await fs.writeFile(baseHttpPath, baseLines.join('\n'), 'utf8');
-    await fs.writeFile(baseHttpDtsPath, dtsLines.join('\n'), 'utf8');
+        '}'
+    ].join('\n');
+}
+function splitTemplateLines(value) {
+    return value.replace(/\r\n/g, '\n').split('\n');
 }
 function buildTagFiles(operations) {
     const usedNames = new Map();

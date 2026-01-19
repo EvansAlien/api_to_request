@@ -13,6 +13,12 @@ interface SwaggerConfig {
   schemasPackageMap?: Record<string, string>;
   customModelFolder?: Record<string, string>;
   folderMap?: Record<string, string>;
+  baseHttp?: {
+    template?: 'fetch' | 'axios' | 'custom';
+    pageResp?: string;
+    requestTemplate?: string;
+    customImports?: string;
+  };
 }
 
 export function registerCommands(context: vscode.ExtensionContext) {
@@ -110,6 +116,7 @@ async function runGenerateOnce(workspaceRoot: string, config: SwaggerConfig) {
     urlPrefix: config.urlPrefix,
     schemasPackageMap: config.schemasPackageMap,
     customModelFolder: config.customModelFolder,
-    folderMap: config.folderMap
+    folderMap: config.folderMap,
+    baseHttp: config.baseHttp
   });
 }

@@ -1,13 +1,17 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { OperationModel, ParameterInfo } from './types';
+import type { BaseHttpConfig, OperationModel, ParameterInfo } from './types';
 import { toPascalCase } from './utils';
 
-export async function writeBaseHttpFiles(outputRoot: string) {
+export async function writeBaseHttpFiles(outputRoot: string, config?: BaseHttpConfig) {
   const baseHttpPath = path.join(outputRoot, 'base_http.ts');
   const baseHttpDtsPath = path.join(outputRoot, 'base_http.d.ts');
+  const importLines = buildBaseHttpImports(config);
+  const pageRespLines = buildPageRespLines(config);
+  const requestTemplate = buildRequestTemplate(config);
   const baseLines = [
     '/* eslint-disable */',
+    ...importLines,
     '',
     'export type RequestOptions = {',
     '  method: string;',
@@ -16,16 +20,7 @@ export async function writeBaseHttpFiles(outputRoot: string) {
     '  data?: any;',
     '};',
     '',
-    'export interface PageData<T> {',
-    '  list: T[];',
-    '  page: number;',
-    '  size: number;',
-    '  total: number;',
-    '}',
-    '',
-    'export interface PageResp<T> {',
-    '  data: PageData<T>;',
-    '}',
+    ...pageRespLines,
     '',
     "export const BASE_URL = '';",
     '',
@@ -44,18 +39,7 @@ export async function writeBaseHttpFiles(outputRoot: string) {
     "  return urlTemplate.replace(/\\{(\\w+)\\}/g, (_, key) => encodeURIComponent(String(params[key])));",
     '}',
     '',
-    'export async function request<T>(options: RequestOptions): Promise<T> {',
-    '  const url = `${BASE_URL}${options.url}${buildQuery(options.params)}`;',
-    '  const response = await fetch(url, {',
-    '    method: options.method,',
-    "    headers: { 'Content-Type': 'application/json' },",
-    '    body: options.data !== undefined ? JSON.stringify(options.data) : undefined',
-    '  });',
-    '  if (!response.ok) {',
-    '    throw new Error(`请求失败: ${response.status} ${response.statusText}`);',
-    '  }',
-    '  return (await response.json()) as T;',
-    '}',
+    requestTemplate,
     ''
   ];
 
@@ -67,16 +51,7 @@ export async function writeBaseHttpFiles(outputRoot: string) {
     '  data?: any;',
     '};',
     '',
-    'export interface PageData<T> {',
-    '  list: T[];',
-    '  page: number;',
-    '  size: number;',
-    '  total: number;',
-    '}',
-    '',
-    'export interface PageResp<T> {',
-    '  data: PageData<T>;',
-    '}',
+    ...pageRespLines,
     '',
     'export const BASE_URL: string;',
     '',
@@ -88,6 +63,74 @@ export async function writeBaseHttpFiles(outputRoot: string) {
 
   await fs.writeFile(baseHttpPath, baseLines.join('\n'), 'utf8');
   await fs.writeFile(baseHttpDtsPath, dtsLines.join('\n'), 'utf8');
+}
+
+function buildBaseHttpImports(config?: BaseHttpConfig): string[] {
+  const lines: string[] = [];
+  if (config?.template === 'axios') {
+    lines.push("import axios from 'axios';");
+  }
+  if (config?.customImports) {
+    lines.push(...splitTemplateLines(config.customImports));
+  }
+  return lines.length > 0 ? [...lines, ''] : [];
+}
+
+function buildPageRespLines(config?: BaseHttpConfig): string[] {
+  if (config?.pageResp?.trim()) {
+    return splitTemplateLines(config.pageResp);
+  }
+  return [
+    'export interface PageData<T> {',
+    '  list: T[];',
+    '  page: number;',
+    '  size: number;',
+    '  total: number;',
+    '}',
+    '',
+    'export interface PageResp<T> {',
+    '  data: PageData<T>;',
+    '}'
+  ];
+}
+
+function buildRequestTemplate(config?: BaseHttpConfig): string {
+  const custom = config?.requestTemplate?.trim();
+  if (custom) {
+    return custom;
+  }
+  if (config?.template === 'axios') {
+    return [
+      'export async function request<T>(options: RequestOptions): Promise<T> {',
+      '  const response = await axios.request<T>({',
+      '    method: options.method,',
+      '    url: options.url,',
+      '    params: options.params,',
+      '    data: options.data,',
+      '    baseURL: BASE_URL',
+      '  });',
+      '  return response.data;',
+      '}'
+    ].join('\n');
+  }
+  return [
+    'export async function request<T>(options: RequestOptions): Promise<T> {',
+    '  const url = `${BASE_URL}${options.url}${buildQuery(options.params)}`;',
+    '  const response = await fetch(url, {',
+    '    method: options.method,',
+    "    headers: { 'Content-Type': 'application/json' },",
+    '    body: options.data !== undefined ? JSON.stringify(options.data) : undefined',
+    '  });',
+    '  if (!response.ok) {',
+    '    throw new Error(`请求失败: ${response.status} ${response.statusText}`);',
+    '  }',
+    '  return (await response.json()) as T;',
+    '}'
+  ].join('\n');
+}
+
+function splitTemplateLines(value: string): string[] {
+  return value.replace(/\r\n/g, '\n').split('\n');
 }
 
 export function buildTagFiles(operations: OperationModel[]) {

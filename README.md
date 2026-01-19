@@ -44,5 +44,18 @@ swagger:
     游戏记录: gameRecord
     推送消息管理: pushMessageManagement
     推送调度管理: pushSchedulerManagement
+  baseHttp:
+    template: fetch
+    pageResp: |
+      export interface PageData<T> {
+        list: T[];
+        page: number;
+        size: number;
+        total: number;
+      }
+
+      export interface PageResp<T> {
+        data: PageData<T>;
+      }
   
 ```
