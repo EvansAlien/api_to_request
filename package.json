@@ -1,0 +1,46 @@
+{
+  "name": "zorycode-request-generator",
+  "displayName": "ZoryCode Request Generator",
+  "description": "从 OpenAPI 自动生成前端 request 与 models",
+  "version": "1.0.0",
+  "publisher": "EvansAlien6173",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "openapi",
+    "swagger",
+    "request",
+    "generator"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "extension.generateRequests",
+        "title": "Generate Requests from OpenAPI"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "dependencies": {
+    "pinyin-pro": "^3.24.0",
+    "yaml": "^2.4.5"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "webpack": "^5.0.0",
+    "webpack-cli": "^5.0.0",
+    "ts-loader": "^9.0.0"
+  }
+}
