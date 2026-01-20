@@ -8,6 +8,7 @@ export async function writeBaseHttpFiles(outputRoot: string, config?: BaseHttpCo
   const baseHttpDtsPath = path.join(outputRoot, 'base_http.d.ts');
   const importLines = buildBaseHttpImports(config);
   const pageRespLines = buildPageRespLines(config);
+  const helperLines = buildBaseHttpHelpers(config);
   const requestTemplate = buildRequestTemplate(config);
   const baseLines = [
     '/* eslint-disable */',
@@ -39,6 +40,7 @@ export async function writeBaseHttpFiles(outputRoot: string, config?: BaseHttpCo
     "  return urlTemplate.replace(/\\{(\\w+)\\}/g, (_, key) => encodeURIComponent(String(params[key])));",
     '}',
     '',
+    ...helperLines,
     requestTemplate,
     ''
   ];
@@ -99,17 +101,25 @@ function buildRequestTemplate(config?: BaseHttpConfig): string {
   if (custom) {
     return custom;
   }
+  const needsHandle = Boolean(
+    config?.successWhen ||
+      config?.successPath ||
+      config?.dataPath ||
+      config?.errorMessagePath
+  );
+  const handleLines = buildResponseHandlingLines(config);
   if (config?.template === 'axios') {
     return [
       'export async function request<T>(options: RequestOptions): Promise<T> {',
-      '  const response = await axios.request<T>({',
+      '  const response = await axios.request<any>({',
       '    method: options.method,',
       '    url: options.url,',
       '    params: options.params,',
       '    data: options.data,',
       '    baseURL: BASE_URL',
       '  });',
-      '  return response.data;',
+      '  const resp = response.data;',
+      ...(needsHandle ? handleLines : ['  return resp as T;']),
       '}'
     ].join('\n');
   }
@@ -124,13 +134,82 @@ function buildRequestTemplate(config?: BaseHttpConfig): string {
     '  if (!response.ok) {',
     '    throw new Error(`请求失败: ${response.status} ${response.statusText}`);',
     '  }',
-    '  return (await response.json()) as T;',
+    '  const resp = (await response.json()) as any;',
+    ...(needsHandle ? handleLines : ['  return resp as T;']),
     '}'
   ].join('\n');
 }
 
 function splitTemplateLines(value: string): string[] {
   return value.replace(/\r\n/g, '\n').split('\n');
+}
+
+function buildBaseHttpHelpers(config?: BaseHttpConfig): string[] {
+  if (!needsPathHelper(config)) {
+    return [];
+  }
+  return [
+    'function getValueByPath(obj: any, path: string): any {',
+    '  if (!path) {',
+    '    return obj;',
+    '  }',
+    '  const parts = path.split(".").filter(Boolean);',
+    '  let current = obj;',
+    '  for (const key of parts) {',
+    '    if (current == null) {',
+    '      return undefined;',
+    '    }',
+    '    current = current[key];',
+    '  }',
+    '  return current;',
+    '}',
+    ''
+  ];
+}
+
+function needsPathHelper(config?: BaseHttpConfig): boolean {
+  return Boolean(config?.dataPath || config?.errorMessagePath || config?.successPath);
+}
+
+function buildResponseHandlingLines(config?: BaseHttpConfig): string[] {
+  const lines: string[] = [];
+  const hasSuccessWhen = Boolean(config?.successWhen?.trim());
+  const successPath = config?.successPath?.trim();
+  const dataPath = config?.dataPath?.trim();
+  const errorMessagePath = config?.errorMessagePath?.trim();
+
+  if (hasSuccessWhen) {
+    lines.push(`  const success = ${config?.successWhen};`);
+  } else if (successPath) {
+    const pathLiteral = JSON.stringify(successPath);
+    lines.push(`  const successValue = getValueByPath(resp, ${pathLiteral});`);
+    if (config?.successValues && config.successValues.length > 0) {
+      lines.push(`  const success = ${JSON.stringify(config.successValues)}.includes(successValue);`);
+    } else {
+      lines.push('  const success = Boolean(successValue);');
+    }
+  } else {
+    lines.push('  const success = true;');
+  }
+
+  lines.push('  if (!success) {');
+  if (errorMessagePath) {
+    const pathLiteral = JSON.stringify(errorMessagePath);
+    lines.push(`    const message = getValueByPath(resp, ${pathLiteral});`);
+    lines.push("    throw new Error(message ?? '请求失败');");
+  } else {
+    lines.push("    throw new Error('请求失败');");
+  }
+  lines.push('  }');
+
+  if (dataPath) {
+    const pathLiteral = JSON.stringify(dataPath);
+    lines.push(`  const data = getValueByPath(resp, ${pathLiteral});`);
+  } else {
+    lines.push('  const data = resp;');
+  }
+  lines.push('  return data as T;');
+  return lines;
 }
 
 export function buildTagFiles(operations: OperationModel[]) {
@@ -161,10 +240,10 @@ export function buildTagFiles(operations: OperationModel[]) {
     typeLines.push("import * as models from '../models';\n\n");
   }
 
+  if (needsPageResp) {
+    dtsLines.push("import { PageResp } from '../base_http';\n\n");
+  }
   if (needsModels) {
-    dtsLines.push(
-      `import {  request${needsPageResp ? ', PageResp' : ''} } from '../base_http';\n\n`
-    );
     dtsLines.push("import * as models from '../models';\n\n");
   }
 

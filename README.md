@@ -41,5 +41,8 @@ swagger:
       export interface PageResp<T> {
         data: PageData<T>;
       }
+    successPath: flag
+    successValues: [true]
+    dataPath: data
   
 ```

@@ -18,6 +18,11 @@ export interface BaseHttpConfig {
   pageResp?: string;
   requestTemplate?: string;
   customImports?: string;
+  successWhen?: string;
+  successPath?: string;
+  successValues?: Array<string | number | boolean>;
+  dataPath?: string;
+  errorMessagePath?: string;
 }
 
 export interface Operation {

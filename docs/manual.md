@@ -137,6 +137,11 @@ export async function getApiAdminUsers(
 - `pageResp`: 自定义 `PageResp`/`PageData` 的 TS 片段（将直接写入 `base_http.ts/.d.ts`）
 - `requestTemplate`: 自定义 `request` 函数模板（会直接替换 `base_http.ts` 中的 `request` 实现）
 - `customImports`: 自定义 import 语句（会插入到 `base_http.ts` 顶部，适合引入 axios 或其他依赖）
+- `successWhen`: 判断成功的 JS 表达式（可直接使用变量 `resp`）
+- `successPath`: 判断成功的字段路径（如 `flag` / `status` / `data.code`）
+- `successValues`: 成功值列表（搭配 `successPath` 使用）
+- `dataPath`: 成功时取值路径（如 `data` / `data.list`）
+- `errorMessagePath`: 失败时错误信息路径（如 `message` / `msg`）
 
 ### 使用 axios 模板
 
@@ -169,6 +174,30 @@ swagger:
         });
         return response.data;
       }
+```
+
+### 响应成功判定与取值
+
+```yaml
+swagger:
+  jsonUrl: http://127.0.0.1:4523/export/openapi/3?version=3.0
+  outputDir: /domains/api-v3
+  baseHttp:
+    successPath: status
+    successValues: ["ok", 200]
+    dataPath: data
+    errorMessagePath: message
+```
+
+如果你的返回不是固定字段，可以直接写表达式：
+
+```yaml
+swagger:
+  jsonUrl: http://127.0.0.1:4523/export/openapi/3?version=3.0
+  outputDir: /domains/api-v3
+  baseHttp:
+    successWhen: resp.flag === true || resp.status === "ok" || resp.status === 200
+    dataPath: data
 ```
 
 ## 预计输出示例（model）
