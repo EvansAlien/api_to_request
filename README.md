@@ -2,22 +2,6 @@
 
 这是一个标准的 VSCode 插件起步模板。
 
-## 结构
-
-- `src/extension.ts`: 扩展入口
-- `src/commands/index.ts`: 命令注册
-- `.vscode/launch.json`: 调试配置
-- `.vscode/tasks.json`: 构建任务
-
-## 开发
-
-1. 安装依赖：`npm install`
-2. 打包：`npm run compile`
-3. 调试：F5 运行 `Run Extension`
-
-## 命令
-- `Generate Requests from OpenAPI` -> `extension.generateRequests`
-
 ## 生成 OpenAPI Request
 
 执行 `Generate Requests from OpenAPI` 命令后，输入 OpenAPI JSON 地址与输出目录。
