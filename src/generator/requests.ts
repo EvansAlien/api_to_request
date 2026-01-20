@@ -162,6 +162,9 @@ export function buildTagFiles(operations: OperationModel[]) {
   }
 
   if (needsModels) {
+    dtsLines.push(
+      `import {  request${needsPageResp ? ', PageResp' : ''} } from '../base_http';\n\n`
+    );
     dtsLines.push("import * as models from '../models';\n\n");
   }
 

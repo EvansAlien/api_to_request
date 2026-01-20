@@ -9801,6 +9801,7 @@ function buildTagFiles(operations) {
     }
     if (needsModels) {
         dtsLines.push("import * as models from '../models';\n\n");
+        dtsLines.push(`import {  request${needsPageResp ? ', PageResp' : ''} } from '../base_http';\n\n`);
     }
     for (const op of normalized) {
         const pascal = (0, utils_1.toPascalCase)(op.name);
