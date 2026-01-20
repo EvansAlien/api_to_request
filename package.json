@@ -2,7 +2,7 @@
   "name": "zorycode-request-generator",
   "displayName": "ZoryCode Request Generator",
   "description": "从 OpenAPI 自动生成前端 request 与 models",
-  "icon": "images/icons8-g-100.png",
+  "icon": "images/logo.png",
   "version": "1.1.1",
   "publisher": "EvansAlien6173",
   "engines": {
