@@ -3,7 +3,7 @@
   "displayName": "ZoryCode Request Generator",
   "description": "从 OpenAPI 自动生成前端 request 与 models",
   "icon": "images/logo.png",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "publisher": "EvansAlien6173",
   "engines": {
     "vscode": "^1.90.0"
