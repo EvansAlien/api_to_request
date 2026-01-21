@@ -40,7 +40,8 @@
     "compile:dev": "webpack",
     "watch": "webpack --watch",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
   },
   "dependencies": {
     "pinyin-pro": "^3.24.0",
