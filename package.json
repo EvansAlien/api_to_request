@@ -36,7 +36,8 @@
     ]
   },
   "scripts": {
-    "compile": "webpack",
+    "compile": "NODE_ENV=production webpack",
+    "compile:dev": "webpack",
     "watch": "webpack --watch",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
